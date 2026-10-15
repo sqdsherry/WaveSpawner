@@ -952,7 +952,7 @@ MonoBehaviour:
   _camera: {fileID: 330585545}
   _hitLayerMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 64
   _maxRaycastDistance: 100
 --- !u!4 &1192767864
 Transform:
