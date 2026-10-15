@@ -4,6 +4,35 @@
 - Основна сцена: `Assets/Scenes/MainScene.unity`.
 - Генерація сцени та асетів з нуля: меню `Tools -> Wave Spawner -> Setup Assets and Scene`.
 
+## Схема взаємодії
+
+```mermaid
+flowchart LR
+    subgraph Data [Data Layer]
+        WC["WaveConfig<br>(ScriptableObjects)"]
+    end
+
+    subgraph Core [Gameplay Core]
+        WM["WaveController<br>(State Machine)"]
+        SP["EnemySpawner<br>(ISpawner & ObjectPool)"]
+        EN["Enemy<br>(IDamageable)"]
+        INP["ClickRaycastController<br>(Pointer Input)"]
+    end
+
+    subgraph UI [UI Layer - MVP]
+        PRES["WaveUIPresenter"]
+        VIEW["WaveUIView<br>(Passive View)"]
+    end
+
+    WC -->|Конфіг| WM
+    WM -->|Spawn| SP
+    SP -->|Pool Get| EN
+    INP -->|Kill| EN
+    EN -.->|OnDied| WM
+    WM -.->|C# Events| PRES
+    PRES -->|Update| VIEW
+```
+
 ## Архітектурні рішення та їх вибір
 - **Пул об'єктів (`UnityEngine.Pool`):** штатний пул замість `Instantiate`/`Destroy` та самописних списків. Усуває GC-спайки під час спавну і захищає від подвійного повернення об'єкта (`collectionCheck`).
 - **UI через MVP (Passive View):** в'юшка (`WaveUIView`) лише відображає стан і нічого не знає про логіку гри. Це дозволяє змінювати верстку або перенести UI на UI Toolkit без правок у геймплейному коді.
