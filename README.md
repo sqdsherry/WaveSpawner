@@ -1,22 +1,29 @@
-# Wave Spawner
+# 🌊 Wave Spawner — Clean Architecture & Object Pooling Showcase
 
-## Запуск
-- Основна сцена: `Assets/Scenes/MainScene.unity`.
-- Генерація сцени та асетів з нуля: меню `Tools -> Wave Spawner -> Setup Assets and Scene`.
+![Unity Version](https://img.shields.io/badge/Unity-6000.0%20%2F%20URP-black?style=flat&logo=unity)
+![Language](https://img.shields.io/badge/Language-C%23-blue?style=flat&logo=csharp)
+![Architecture](https://img.shields.io/badge/Architecture-MVP%20(Passive%20View)-emerald?style=flat)
+![Memory](https://img.shields.io/badge/Memory-Zero--Alloc%20UnityEngine.Pool-purple?style=flat)
+![Dataflow](https://img.shields.io/badge/Data--Driven-ScriptableObjects-orange?style=flat)
+![Input](https://img.shields.io/badge/Input-New%20Input%20System-red?style=flat)
 
-## Схема взаємодії
+An architectural, production-ready wave spawner subsystem built in **Unity**. Demonstrates strict separation of concerns, automated memory pooling (`UnityEngine.Pool`), data-driven configuration (`ScriptableObjects`), and complete decoupling via **MVP (Model-View-Presenter)** and native C# events.
+
+---
+
+## 🏛️ System Interaction Flow
 
 ```mermaid
 flowchart LR
     subgraph Data [Data Layer]
-        WC["WaveConfig<br>(ScriptableObjects)"]
+        WC["WaveConfig / Sequence<br>(ScriptableObjects)"]
     end
 
     subgraph Core [Gameplay Core]
         WM["WaveController<br>(State Machine)"]
         SP["EnemySpawner<br>(ISpawner & ObjectPool)"]
         EN["Enemy<br>(IDamageable)"]
-        INP["ClickRaycastController<br>(Pointer Input)"]
+        INP["ClickRaycastController<br>(New Input System)"]
     end
 
     subgraph UI [UI Layer - MVP]
@@ -24,24 +31,10 @@ flowchart LR
         VIEW["WaveUIView<br>(Passive View)"]
     end
 
-    WC -->|Конфіг| WM
-    WM -->|Spawn| SP
+    WC -->|Configuration| WM
+    WM -->|Spawn Command| SP
     SP -->|Pool Get| EN
-    INP -->|Kill| EN
-    EN -.->|OnDied| WM
-    WM -.->|C# Events| PRES
-    PRES -->|Update| VIEW
-```
-
-## Архітектурні рішення та їх вибір
-- **Пул об'єктів (`UnityEngine.Pool`):** штатний пул замість `Instantiate`/`Destroy` та самописних списків. Усуває GC-спайки під час спавну і захищає від подвійного повернення об'єкта (`collectionCheck`).
-- **UI через MVP (Passive View):** в'юшка (`WaveUIView`) лише відображає стан і нічого не знає про логіку гри. Це дозволяє змінювати верстку або перенести UI на UI Toolkit без правок у геймплейному коді.
-- **Data-Driven налаштування (ScriptableObject):** параметри хвиль (`WaveConfig`, `WaveSequenceConfig`) винесені окремо від коду сцени, а валідація в `OnValidate` запобігає некоректним значенням ще до запуску.
-- **Слабка зв'язаність через C# Events:** системи взаємодіють через звичайні події замість прямих залежностей або `UnityEvent` з оверхедом рефлексії.
-- **Кліки через New Input System:** обробка через `Pointer.current` з перевіркою `IsPointerOverGameObject`, що блокує кліки по ворогах крізь інтерфейс.
-
-## Точки розширення
-- **Різні типи ворогів:** спавнер підтримує оверрайд префабів під окремих мобів чи босів через конфіг хвилі.
-- **Бойова система:** взаємодія побудована на `IDamageable` з пошуком через `GetComponentInParent` (підтримка складних моделей з кількома колайдерами).
-- **DI-фреймворки:** презентер взаємодіє з інтерфейсом `IWaveUIView` і легко переноситься під Zenject або VContainer як чистий C# клас.
-- **Асинхронність (UniTask):** у тестовому використані корутини (через обмеження на сторонні асети), але для продакшену логіка затримок та спавну легко переводиться на UniTask.
+    INP -->|Raycast Hit| EN
+    EN -.->|OnDied Event| WM
+    WM -.->|Native C# Events| PRES
+    PRES -->|Update Presentation| VIEW
