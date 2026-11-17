@@ -1,40 +1,42 @@
-# 🌊 Wave Spawner — Clean Architecture & Object Pooling Showcase
+# Wave Spawner
 
-![Unity Version](https://img.shields.io/badge/Unity-6000.0%20%2F%20URP-black?style=flat&logo=unity)
-![Language](https://img.shields.io/badge/Language-C%23-blue?style=flat&logo=csharp)
-![Architecture](https://img.shields.io/badge/Architecture-MVP%20(Passive%20View)-emerald?style=flat)
-![Memory](https://img.shields.io/badge/Memory-Zero--Alloc%20UnityEngine.Pool-purple?style=flat)
-![Dataflow](https://img.shields.io/badge/Data--Driven-ScriptableObjects-orange?style=flat)
-![Input](https://img.shields.io/badge/Input-New%20Input%20System-red?style=flat)
+A small Unity / C# portfolio subsystem for configurable enemy waves. It demonstrates wave sequencing, pooled enemy spawning and event-driven UI presentation.
 
-An architectural, production-ready wave spawner subsystem built in **Unity**. Demonstrates strict separation of concerns, automated memory pooling (`UnityEngine.Pool`), data-driven configuration (`ScriptableObjects`), and complete decoupling via **MVP (Model-View-Presenter)** and native C# events.
+## Implemented systems
 
----
+- ScriptableObject configurations for individual waves and their sequence.
+- A wave lifecycle covering spawning, waiting for enemies to be cleared and delays between waves.
+- Round-robin spawn points and Unity's `ObjectPool<Enemy>` for the default enemy prefab.
+- Pointer-based damage through the Input System.
+- An MVP-based UI: the presenter listens to controller events and updates the view.
 
-## 🏛️ System Interaction Flow
+## Code to review
+
+- [WaveController](Assets/WaveSpawner/Scripts/Waves/WaveController.cs): sequencing and wave events.
+- [EnemySpawner](Assets/WaveSpawner/Scripts/Spawning/EnemySpawner.cs): pooling and spawn-point selection.
+- [Wave data](Assets/WaveSpawner/Scripts/Data).
+- [UI presenter and view](Assets/WaveSpawner/Scripts/UI).
+- [Pointer input](Assets/WaveSpawner/Scripts/Player/ClickRaycastController.cs).
 
 ```mermaid
 flowchart LR
-    subgraph Data [Data Layer]
-        WC["WaveConfig / Sequence<br>(ScriptableObjects)"]
-    end
+    Config[Wave configuration] --> Controller[Wave controller]
+    Controller --> Spawner[Enemy spawner and pool]
+    Spawner --> Enemy[Enemy]
+    Enemy -->|Death event| Controller
+    Controller -->|Wave events| Presenter[UI presenter]
+    Presenter --> View[UI view]
+    Input[Pointer input] --> Enemy
+```
 
-    subgraph Core [Gameplay Core]
-        WM["WaveController<br>(State Machine)"]
-        SP["EnemySpawner<br>(ISpawner & ObjectPool)"]
-        EN["Enemy<br>(IDamageable)"]
-        INP["ClickRaycastController<br>(New Input System)"]
-    end
+## Open the project
 
-    subgraph UI [UI Layer - MVP]
-        PRES["WaveUIPresenter"]
-        VIEW["WaveUIView<br>(Passive View)"]
-    end
+1. Open with **Unity 6000.3.25f1** and let Unity resolve its packages.
+2. Open `Assets/Scenes/MainScene.unity` and enter Play Mode.
+3. Inspect the scene's wave sequence, spawn points and UI bindings to explore the subsystem.
 
-    WC -->|Configuration| WM
-    WM -->|Spawn Command| SP
-    SP -->|Pool Get| EN
-    INP -->|Raycast Hit| EN
-    EN -.->|OnDied Event| WM
-    WM -.->|Native C# Events| PRES
-    PRES -->|Update Presentation| VIEW
+## Scope and trade-offs
+
+This is a subsystem showcase, not a complete game. Object pooling reuses enemy instances, but does not make the whole system allocation-free: the wave controller creates `WaitForSeconds` objects during execution. No frame-rate or GC benchmark is claimed.
+
+The controller currently references the concrete `EnemySpawner`; the repository also contains an `ISpawner` interface. This remains a prototype-level dependency rather than a fully abstracted spawning boundary.
